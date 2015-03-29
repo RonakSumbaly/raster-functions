@@ -25,7 +25,7 @@ class R_Bridge():
                 'dataType': 'string',
                 'value': 'Temperature Conversion',
                 'required': True,
-                'domain': ('Temperature Conversion','Elevation Limit','Hillshade'),
+                'domain': ('Temperature Conversion','Elevation Limit'),
                 'displayName': "R Script",
                 'description': "Location of the R Script"
             },

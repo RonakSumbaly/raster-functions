@@ -43,8 +43,8 @@ class R_Bridge():
         return {
           'inheritProperties': 2 | 4 | 8,       # inherit everything but the pixel type (1)
           'invalidateProperties': 2 | 4 | 8,    # invalidate these aspects because we are modifying pixel values and updating key properties.
-          'padding': 0,                         # no padding of the input pixel block
-          'inputMask': False                    # we don't need the input mask in .updatePixels()
+          'padding': 0,                         # one extra on each each of the input pixel block
+          'inputMask': False                    # we need the input mask in .updatePixels()
         }
 
     def updateRasterInfo(self, **kwargs):

@@ -2,14 +2,11 @@ import numpy as np
 from scipy import ndimage as ndi
 import math
 
-
-
 class GaborFilter():
 
     def __init__(self):
         self.name = "Gabor Filter"
         self.description = "Extract texture features using the Gabor Filter."
-
 
     def getParameterInfo(self):
         return [
@@ -81,7 +78,6 @@ class GaborFilter():
 
         self.kernel = (self.createGaborKernel(nstds, lamba, theta, psi, sigma, gamma))
 
-
         kwargs['output_info']['bandCount'] = 1
         kwargs['output_info']['pixelType'] = kwargs['raster_info']['pixelType']
         kwargs['output_info']['statistics'] = ()
@@ -90,13 +86,11 @@ class GaborFilter():
 
         return kwargs
 
-
     def updatePixels(self, tlc, shape, props, **pixelBlocks):
         raster = np.array(pixelBlocks['raster_pixels'], dtype ='f4', copy=False)
         raster = ndi.convolve(raster, self.kernel)
         pixelBlocks['output_pixels'] = raster.astype(props['pixelType'], copy=False)
         return pixelBlocks
-
 
     def updateKeyMetadata(self, names, bandIndex, **keyMetadata):
         if bandIndex == -1:                             # dataset-level properties

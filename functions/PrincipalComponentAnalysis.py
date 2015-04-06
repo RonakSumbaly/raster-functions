@@ -3,7 +3,7 @@
 import numpy as np
 import math
 import utils
-from scipy import stats
+
 
 class PrincipalComponentAnalysis():
 

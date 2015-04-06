@@ -66,11 +66,17 @@ class PrincipalComponentAnalysis():
         rasters = np.vstack([np.array(raster.ravel(),copy=False) for raster, i in zip(r,xrange(self.comp))])
 
         ## mask out the noData value for Covariance computation
-        rasters = np.ma.array(rasters, mask= rasters == props['noData'][0])
+        rasters = np.ma.array(rasters, mask= rasters == props['noData'][0])         ## method 2
+        #maskrasters = rasters.mask.any(axis=0)                                     ## method 1
+        #rasters = np.ma.array(rasters, mask=np.vstack((maskrasters, maskrasters)))
 
         ## covariance & correlation mask calculation
         cov_mat = np.ma.cov(rasters, bias=True)
         cor_mat = np.ma.corrcoef(rasters, bias=True)
+        
+        ## method 1 computation with bias = False - Number of observations = (N-1) 
+        #cov_mat = np.ma.cov(rasters)
+        #cor_mat = np.ma.corrcoef(rasters)
 
         self.trace.log("Trace|updatePixels.1|Covariance Matrix: {0} \n| Correlation Matrix: {1}\n".format(cov_mat,cor_mat))
         

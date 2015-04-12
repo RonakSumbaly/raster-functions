@@ -56,30 +56,38 @@ class PrincipalComponentAnalysis():
 
     def updatePixels(self, tlc, shape, props, **pixelBlocks):
         r = np.array(pixelBlocks['raster_pixels'],dtype=props['pixelType'],copy=False)
-        m = np.array(pixelBlocks['raster_mask'], dtype='u1', copy=False)
 
-        ## create empty output & output mask raster without padding
-        output =  np.ones([self.comp,r[0].shape[0]-2,r[0].shape[1]-2])
-        outputmask = np.copy(output)
+        ## create empty output raster without padding
+        output =  np.ones([self.comp,r[0].shape[0],r[0].shape[1]])
 
         ## raster stack for computation
-        rasters = np.vstack([np.array(raster.ravel(),copy=False) for raster, i in zip(r,xrange(self.comp))])
+        rasters  = np.vstack([np.array(raster.ravel(),copy=False) for raster, i in zip(r,xrange(self.comp))])
+        stack    = np.empty(rasters.shape)
 
         ## mask out the noData value for Covariance computation
         rasters = np.ma.array(rasters, mask= rasters == props['noData'][0])         ## method 2
-        #maskrasters = rasters.mask.any(axis=0)                                     ## method 1
-        #rasters = np.ma.array(rasters, mask=np.vstack((maskrasters, maskrasters)))
+        maskrasters = rasters.mask.any(axis=0)                                      ## method 1
+
+        for i in xrange(rasters.shape[0]):
+            stack = np.delete(stack,0,axis =0)
+            stack = np.vstack((stack,maskrasters))
+
+        maskrasters = np.ma.array(rasters, mask = stack)
 
         ## covariance & correlation mask calculation
         cov_mat = np.ma.cov(rasters, bias=True)
-        cor_mat = np.ma.corrcoef(rasters, bias=True)
-        
-        ## method 1 computation with bias = False - Number of observations = (N-1) 
-        #cov_mat = np.ma.cov(rasters)
-        #cor_mat = np.ma.corrcoef(rasters)
 
-        self.trace.log("Trace|updatePixels.1|Covariance Matrix: {0} \n| Correlation Matrix: {1}\n".format(cov_mat,cor_mat))
-        
+        ## rescaling the covariance matrix
+        for row,i in zip(cov_mat,xrange(cov_mat.count())):
+            for col,j in zip(row,xrange(row.count())):
+                if i==j:
+                    cov_mat[i][j] = cov_mat[i][j] * rasters[j].count() / ((props['width']*props['height']) - 1)
+                else:
+                    cov_mat[i][j] = cov_mat[i][j] * maskrasters[j].count() / ((props['width']*props['height']) - 1)
+
+
+        self.trace.log("Trace|updatePixels.1|Covariance Matrix: {0} \n".format(cov_mat))
+
         ## eigen - value and eigen vector computation
         eig_val_cov, eig_vec_cov = np.linalg.eig(cov_mat)
 
@@ -88,20 +96,14 @@ class PrincipalComponentAnalysis():
         eig_pairs.sort()
         eig_pairs.reverse()
 
-        matrix_w = np.hstack((eig_pairs[i][1].reshape(self.comp,1) for i in xrange(len(eig_pairs)))) * (-1) ## fix phase convention - change sign
-        
+        matrix_w = np.hstack((eig_pairs[i][1].reshape(self.comp,1) for i in xrange(len(eig_pairs)))) * (-1)  ## fix phase convention - change sign
+
         self.trace.log("Trace|updatePixels.2|Eigen Pairs: {0} \n| Matrix: {1}\n".format(eig_pairs,matrix_w))
-
         ## multiply eigen-vector matrix transpose to the original raster
-        transformed = np.ma.dot(np.transpose(matrix_w), rasters)
+        transformed = np.array(np.ma.dot(np.transpose(matrix_w), rasters).reshape(output.shape))
+        self.trace.log("Trace|updatePixels.1|Output Matrix: {0} \n".format(transformed))
 
-        ## reshape all transformed stack rasters
-        for i in xrange(len(transformed)):
-            output[i] = transformed[i].reshape((r[0].shape[0],r[0].shape[1]))[1:-1, 1:-1]
-            outputmask[i]      = m[i][1:-1, 1:-1]
-
-        pixelBlocks['output_pixels'] = output.astype(props['pixelType'], copy=False)
-        pixelBlocks['output_mask']   = outputmask.astype('u1',copy = False)
+        pixelBlocks['output_pixels'] = transformed.astype(props['pixelType'], copy=False)
         return pixelBlocks
 
 

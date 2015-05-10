@@ -1,184 +1,185 @@
-"""
-Name    : setup.py
-Usage   : {python-home}/python setup.py
-Purpose : Automate installation of dependencies required for Python raster function
-"""
+'''
+=========================================================
+setup.py: Automate installation of dependencies required for Python raster function
+=========================================================
+
+Installation
+------------
+**setup.py** has no external library dependencies and should compile on
+most systems that are running Python 2.7, or 3.4.
+
+To execute **setup.py** within the package directory run:
+  $ python setup.py
+'''
 
 import os
 import sys
 import subprocess
 import time
 import urllib2
+import logging
 import platform
 
-"""
+from os.path import join as pjoin
+
+'''
 ERRORLEVEL
 0 - Installation successful.
 1 - pip installation unsuccessful.
-2 - File could not be downloaded.
-3 - VC++ Compiler for Python installation unsuccessful.
-4 - Numpy installation unsuccessful.
-5 - Scipy installation unsuccessful.
+2 - HTTP 404 Error URL cannot be found.
+3 - File cannot be downloaded.
+4 - VC++ Compiler for Python installation unsuccessful.
+5 - Python Window Binary installation unsuccessful.
 6 - Python package could not be installed.
 7 - requirements.txt file not found.
-"""
+'''
 
-# Paths to neccessary files
-PY2             = True if sys.version_info[0] == 2 else False
-pyPath          = sys.executable                               # ArcGIS Python Module
-setupPath       = os.path.dirname(os.path.abspath(__file__))   # setup.py
-pipPath         = os.path.dirname(pyPath) + "\Scripts\pip.exe" # pip.exe
 
-# Address to download files
-getpipURL       = "http://bootstrap.pypa.io/get-pip.py"        # get-pip.py
-getVCURL        = "http://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi"  # VCForPython27.msi
+#PATHs
+PY_PATH =               sys.executable
+PACKAGE_PATH =          os.path.abspath(os.path.dirname(__file__))
+MODULE_PATH =           pjoin(PACKAGE_PATH, 'setup.py')
+SCRIPT_PATH =           pjoin(os.path.dirname(PY_PATH),'Scripts')
+PIP_PATH =              pjoin(SCRIPT_PATH,'pip.exe')
+PY_VER2 =               True if sys.version_info[0] == 2 else False
+
+#URLs
+PIP_URL =               "http://bootstrap.pypa.io/get-pip.py"
+VC_URL =                "http://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi"
 
 # Numpy 1.9.2+ MKL Binaries
-numpy27_32URL   = "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/numpy-1.9.2+mkl-cp27-none-win32.whl"
-numpy27_64URL   = "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/numpy-1.9.2+mkl-cp27-none-win_amd64.whl"
-numpy34_64URL   = "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/numpy-1.9.2+mkl-cp34-none-win_amd64.whl"
+NUMPY27_32_URL =        "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/numpy-1.9.2+mkl-cp27-none-win32.whl"
+NUMPY27_64_URL =        "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/numpy-1.9.2+mkl-cp27-none-win_amd64.whl"
+NUMPY34_64_URL =        "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/numpy-1.9.2+mkl-cp34-none-win_amd64.whl"
 
 # Scipy 0.15.1 Window Binaries
-scipy27_32URL   = "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/scipy-0.15.1-cp27-none-win32.whl"
-scipy27_64URL   = "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/scipy-0.15.1-cp27-none-win_amd64.whl"
-scipy34_64URL   = "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/scipy-0.15.1-cp34-none-win_amd64.whl"
+SCIPY27_32_URL =        "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/scipy-0.15.1-cp27-none-win32.whl"
+SCIPY27_64_URL =        "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/scipy-0.15.1-cp27-none-win_amd64.whl"
+SCIPY34_64_URL =        "http://www.lfd.uci.edu/~gohlke/pythonlibs/r7to5k3j/scipy-0.15.1-cp34-none-win_amd64.whl"
 
-def downloadFile(filename, installURL, path):
+
+def errorHandler(errorLog, errorCode):
+    logging.error(errorLog)
+    time.sleep(5)
+    exit(errorCode)
+    
+
+def downloadFile(installURL, installLoc):
     try:
-        req           = urllib2.Request(installURL, headers={ 'User-Agent': 'Mozilla/5.0 '})
-        HTML          = urllib2.urlopen(req)
-        fileDownload  = open(path,'wb')
-        fileDownload.write(HTML.read())
-        fileDownload.close()
-        time.sleep(5)   # Save file on system
-    except Exception:
-        print Exception.message
-        print ("Error: File could not be downloaded.\n")
-        logging.error("File download unsuccessful.")
-        time.sleep(5)
-        exit(2)
+        # Check if URL responses
+        URLreq =        urllib2.Request(installURL, headers={'User-Agent': 'Mozilla/5.0'})
+        URLopen =       urllib2.urlopen(req)
 
-def locateFile(filename, installURL, path):
-    if (os.path.isfile(path)):
-        print ("File located. Starting installation.\n")
+    except urllib2.HTTPError:
+        errorHandler("HTTP 404 URL not found.", 2)
+
+    try:
+        # Download file
+        fileDownload =  open(installLoc, 'wb')
+        fileDownload.write(URLopen.read())
+        fileDownload.close()
+
+    except:
+        errorHandler("File could not be downloaded.", 3)
+
+
+def locateFile(installURL, installLoc):
+    # Check PACKAGE_PATH for dependencies fle
+    if (os.path.isfile(installLoc)):
+        print ("Files located. Starting installation.\n")
 
     else:
         print ("File not found. Downloading file.\n")
-        downloadFile(filename, installURL, path)
+        downloadFile(installURL, installLoc)
         print ("File succesfully downloaded. Starting installation.\n")
 
-def main():
-    # Step 1. Install pip
-    print ("pip Installation.\n") + ("Locating get-pip.py in ") + setupPath + "\n"
 
-    locateFile("get-pip.py", getpipURL, (setupPath + "\get-pip.py"))
+def main():
+    # Install pip
+    print ("pip Installation.\n") + ("Locating get-pip.py in ") + PACKAGE_PATH + "\n"
+
+    locateFile(PIP_URL, (PACKAGE_PATH + "\get-pip.py"))
 
     try:
-        subprocess.call([pyPath, (setupPath + "\get-pip.py")])
-        if os.path.isfile((setupPath + "\get-pip.py")):
-            print "\nInstallation successful.\n"
-        else:
-            print ("Error: pip installation unsuccessful.\n")
-            logging.error("pip installation unsuccessful.")
-            time.sleep(5)
-            exit(1)
+        subprocess.call([PY_PATH, pjoin(PACKAGE_PATH, 'get-pip.py')])
+
     except:
-        print ("Error: pip installation unsuccessful.\n")
-        time.sleep(5)
-        exit(1)
+        errorHandler("pip installation unsuccessful.", 1)
 
-    if PY2:
+    if os.path.isfile(PIP_PATH):
+        print ("\npip installation successful.\n")
+
+    else:
+        errorHandler("pip installation unsuccessful.", 1)
+
+    # Install Microsoft Visual C++ Compiler for Python if PY_VERSION = 2.7
+    if PY_VER2:
         # Step 2. Install Microsoft Visual C++ Compiler for Python
-        print ("Microsoft Visual C++ Compiler Installation.\n") + ("Locating file in ") + setupPath + "\n"
+        print ("Microsoft Visual C++ Compiler Installation.\n") + ("Locating file in ") + PACKAGE_PATH + "\n"
 
-        locateFile("VCForPython.msi", getVCURL, (setupPath + "\VCForPython.msi"))
+        locateFile(VC_URL, (PACKAGE_PATH + "\VCForPython.msi"))
 
         try:
             os.system('msiexec /i VCForPython.msi /qb')
             print "\nInstallation successful.\n"
+
         except:
-            print ("Error: VC++ Compiler for Python installation unsuccessful.\n")
-            logging.error("VC++ Compiler for Python installation unsuccessful.")
-            time.sleep(5)
-            exit(3)
+            errorHandler("VC++ Compiler for Python installation unsuccessful.", 4)
 
 
-    # Step 3. Install Numpy 1.9.2+ MKL
-    print ("\nNumpy 1.9.2+ MKL Installation.\n") + ("Locating File in ") + setupPath + "\n"
+    # Install Numpy + Scipy using Windows Binaries
+    print ("\nNumpy & Scipy Installation.\n") + ("Locating File in ") + PACKAGE_PATH + "\n"
 
-    if PY2:
+    if PY_VER2:
         if platform.architecture()[0] == "32bit":
-            locateFile("numpy-1.9.2+mkl-cp27-none-win32.whl", numpy27_32URL, (setupPath + "\\numpy-1.9.2+mkl-cp27-none-win32.whl"))
-            numpyPath = (setupPath + "\\numpy-1.9.2+mkl-cp27-none-win32.whl")
+            NUMPY_PATH =            (PACKAGE_PATH + "\\numpy-1.9.2+mkl-cp27-none-win32.whl")
+            SCIPY_PATH =            (PACKAGE_PATH + "\scipy-0.15.1-cp27-none-win32.whl")
+
+            locateFile(NUMPY27_32_URL, NUMPY_PATH)
+            locateFile(SCIPY27_32_URL, SCIPY_PATH)
+
         else:
-            locateFile("numpy-1.9.2+mkl-cp27-none-win_amd64.whl", numpy27_64URL, (setupPath + "\\numpy-1.9.2+mkl-cp27-none-win_amd64.whl"))
-            numpyPath = (setupPath + "\\numpy-1.9.2+mkl-cp27-none-win_amd64.whl")
+            NUMPY_PATH =            (PACKAGE_PATH + "\\numpy-1.9.2+mkl-cp27-none-win_amd64.whl")
+            SCIPY_PATH =            (PACKAGE_PATH + "\scipy-0.15.1-cp27-none-win_amd64.whl")
+
+            locateFile(NUMPY27_64_URL, NUMPY_PATH)
+            locateFile(SCIPY27_64_URL, SCIPY_PATH)
 
     else:
-        locateFile("numpy-1.9.2+mkl-cp34-none-win_amd64.whl", numpy27_32URL, (setupPath + "\\numpy-1.9.2+mkl-cp34-none-win_amd64.whl"))
-        numpyPath = (setupPath + "\\numpy-1.9.2+mkl-cp34-none-win_amd64.whl")
+        NUMPY_PATH =                (PACKAGE_PATH + "\\numpy-1.9.2+mkl-cp34-none-win_amd64.whl")
+        SCIPY_PATH =                (PACKAGE_PATH + "\scipy-0.15.1-cp34-none-win_amd64.whl.whl")
+
+        locateFile(NUMPY34_64_URL, NUMPY_PATH)
+        locateFile(SCIPY34_64_URL, SCIPY_PATH)
 
     try:
-        subprocess.call([pipPath, 'install','-U','--upgrade', numpyPath])
+        subprocess.call([PIP_PATH, 'install','-U','--upgrade', NUMPY_PATH])
+        subprocess.call([PIP_PATH, 'install','-U','--upgrade', SCIPY_PATH])
 
     except:
-        print ("Error: Numpy installation unsuccessful.\n")
-        logging.error("Numpy installation unsuccessful.")
+        errorHandler("Python Windows Binaries could not be installed.", 5)
 
-        time.sleep(5)
-        exit(4)
 
-    # Step 4. Install Scipy 0.15.1
-    print ("\nScipy 0.15.1 Installation.\n") + ("Locating File in ") + setupPath + "\n"
+    # Install Python Dependencies
+    print ("\nInstall Python Dependencies.\n") +("Locating requirements.txt in ") + PACKAGE_PATH + "\n"
 
-    if PY2:
-        if platform.architecture()[0] == "32bit":
-            locateFile("scipy-0.15.1-cp27-none-win32.whl", scipy27_32URL, (setupPath + "\scipy-0.15.1-cp27-none-win32.whl"))
-            scipyPath = (setupPath + "\scipy-0.15.1-cp27-none-win32.whl")
-        else:
-            locateFile("scipy-0.15.1-cp27-none-win_amd64.whl", scipy27_64URL, (setupPath + "\scipy-0.15.1-cp27-none-win_amd64.whl"))
-            scipyPath = (setupPath + "\scipy-0.15.1-cp27-none-win_amd64.whl")
-
-    else:
-        locateFile("scipy-0.15.1-cp34-none-win_amd64.whl", scipy34_64URL, (setupPath + "\scipy-0.15.1-cp34-none-win_amd64.whl"))
-        scipyPath = (setupPath + "\scipy-0.15.1-cp34-none-win_amd64.whl.whl")
-
-    try:
-        subprocess.call([pipPath, 'install','-U','--upgrade', scipyPath])
-
-    except:
-        print ("Error: Scipy installation unsuccessful.\n")
-        logging.error("Scipy installation unsuccessful.")
-
-        time.sleep(5)
-        exit(5)
-
-    # Step 5. Install Python Dependencies
-    print ("\nInstall Python Dependencies.\n") +("Locating requirements.txt in ") + setupPath + "\n"
-
-    if (os.path.isfile((setupPath + "\\requirements.txt"))):
-        install_require = [line.strip() for line in open((setupPath + "\\requirements.txt"))]
+    if (os.path.isfile((PACKAGE_PATH + "\\requirements.txt"))):
+        install_require = [line.strip() for line in open((PACKAGE_PATH + "\\requirements.txt"))]
 
         for package in install_require:
             print ("Installing ") + package + (" package.\n")
 
             try:
-                subprocess.call([pipPath, 'install','-U','--upgrade', package])
+                subprocess.call([PIP_PATH, 'install','-U','--upgrade', package])
 
             except:
-                print ("Error: ") + package + " could not be downloaded.\n"
-                logging.error(("Error: ") + package + " could not be downloaded.\n")
-                time.sleep(5)
-                exit(5)
+                errorHandler(("Error: " + package + " could not be downloaded."), 6)
 
             print package + (" successfully installed.\n")
-            time.sleep(1)
+            time.sleep(2)
 
     else:
-        print ("Error: requirements.txt not found.\n")
-        logging.error("requirements.txt not found.")
-        time.sleep(5)
-        exit(6)
+        errorHandler("requirements.txt not found.", 7)
 
     print ("Installation successful.\n")
     time.sleep(5)

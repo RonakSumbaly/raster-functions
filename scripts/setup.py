@@ -68,7 +68,7 @@ def downloadFile(installURL, installLoc):
     try:
         # Check if URL responses
         URLreq =        urllib2.Request(installURL, headers={'User-Agent': 'Mozilla/5.0'})
-        URLopen =       urllib2.urlopen(req)
+        URLopen =       urllib2.urlopen(URLreq)
 
     except urllib2.HTTPError:
         errorHandler("HTTP 404 URL not found.", 2)

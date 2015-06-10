@@ -122,7 +122,7 @@ class Hillshade():
         # pixel size in input raster SR...
         p = props['cellSize'] if self.sr is None else utils.computeCellSize(props, self.sr, self.proj)
 
-        m = 1.11e5 if math.fabs(self.zf - 1.) <= 0.0001 and props['spatialReference'] == 4326 else 1.
+        m = 1.11e5 if props['spatialReference'] == 4326 or props['spatialReference'] == 4269 else 1.
         if p is not None and len(p) == 2:
             p = np.multiply(p, m)   # conditional degrees to meters conversion
             xs, ys = (self.zf + (np.power(p, self.ce) * self.cf)) / (8*p)

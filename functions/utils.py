@@ -28,8 +28,9 @@ def computeCellSize(props, sr=None, proj=None):
     if proj is None:
         proj = Projection()                                     # reproject extents
 
-    (xMin, xMax) = proj.transform(props['spatialReference'], sr, e[0], e[2])
-    (yMin, yMax) = proj.transform(props['spatialReference'], sr, e[1], e[3])
+    (xMin, yMin) = proj.transform(props['spatialReference'], sr, e[0], e[1])
+    (xMax, yMax) = proj.transform(props['spatialReference'], sr, e[2], e[3])
+
     return (xMax-xMin)/w, (yMax-yMin)/h                         # cell size of parent raster
 
 

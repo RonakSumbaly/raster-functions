@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from skimage import morphology
 from scipy import ndimage as ndi
 
 
@@ -239,7 +240,6 @@ class Contour():
             cf = 0
             mod = 0
 
-
         if mod == 0:    m = 1
         elif mod == 1:  m = 2
         elif mod == 2:  m = 5
@@ -280,22 +280,28 @@ class Contour():
         # required for smoothening
         self.minValue = self.calcRasterMin(temp) if not(self.minValue) else self.minValue
 
+        # noData position
+        noDataPos = np.equal(temp, self.noData)
+
         # S1. initialize radius grid
         radiusGrid = self.initializeGrid(temp)
 
         # S2. apply smooth radius grid
-        kernelSlope = self.radiusGridKernel(self.par["slopeRadius"])
+        kernelSlope = morphology.diamond(math.ceil(self.par["slopeRadius"]))
         if self.par["slopeRadius"] > 1:
             radiusGrid = ndi.minimum_filter(radiusGrid, footprint=kernelSlope)
 
         # S3. apply average radius grid
-        kernelAvg = self.radiusGridKernel(self.par["averageRadius"])
-        noOfPixels = len(kernelAvg[kernelAvg == 1])
+        kernelAvg = morphology.diamond(math.ceil(self.par["averageRadius"]))
+        noOfPixels = np.sum(kernelAvg)
         if self.par["averageRadius"] > 1:
             radiusGrid = ndi.convolve(radiusGrid, kernelAvg) / noOfPixels
 
         # S4. smoothen DEM
         dem = self.smoothenDEM(temp, radiusGrid)
+
+        # substitute noData
+        dem = np.where(noDataPos, self.noData, dem)
 
         # apply selected mode for smoothening
         if self.par["mode"] == "Smooth Contour":   dem = self.generateContour(dem)
@@ -303,16 +309,6 @@ class Contour():
         else:                                      dem = dem
 
         return dem
-
-    # radius grid kernel
-    def radiusGridKernel(self, radius):
-        mRadius = int(math.ceil(radius))
-        kernel = np.zeros((2 * mRadius + 1, 2 * mRadius + 1))
-        y, x = np.ogrid[-mRadius:mRadius + 1, -mRadius:mRadius + 1]
-        mask = x**2 + y**2 <= mRadius**2
-        kernel[mask] = 1
-
-        return kernel
 
     # initialize grid for smoothening
     def initializeGrid(self, temp):
@@ -351,7 +347,7 @@ class Contour():
 
         # average neighboring pixels for radius from 0 - maximumRadius
         for grid in xrange(int(maximumRadius)):
-            kernel = self.radiusGridKernel(grid)
+            kernel = morphology.diamond(grid)
             noOfPixels = len(kernel[kernel == 1])
             avgGrid[grid] = ndi.convolve(temp, kernel) / noOfPixels
 

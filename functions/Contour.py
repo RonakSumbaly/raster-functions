@@ -232,9 +232,13 @@ class Contour():
         range3 = max(range1, range2)
 
         cf = mod = m = 0
-        try:        cf = math.floor((math.log10(range3 / self.par["orgInterval"]) * 3) + 0.5)
-        except:     cf = 0
-        mod = long(cf % 3)
+        try:
+            cf = math.floor((math.log10(range3 / self.par["orgInterval"]) * 3) + 0.5)
+            mod = long(cf % 3)
+        except:
+            cf = 0
+            mod = 0
+
 
         if mod == 0:    m = 1
         elif mod == 1:  m = 2

@@ -38,8 +38,7 @@ class TerrainRuggednessIndex():
             raise Exception("Input raster has more than one band. Only single-band raster datasets are supported")
 
         kwargs['output_info']['bandCount'] = 1
-        kwargs['output_info']['pixelType'] = 'u1'
-        kwargs['output_info']['statistics'] = ({'minimum': 0., 'maximum': 255.}, )
+        kwargs['output_info']['pixelType'] = 'u2'
         kwargs['output_info']['histogram'] = ()
         kwargs['output_info']['resampling'] = False
         kwargs['output_info']['colormap'] = ()

@@ -4,7 +4,7 @@
 	<Function xsi:type='typens:PythonAdapterFunction'>
 		<Name>Terrain Ruggedness Index</Name>
 		<Description>This function calculates the TRI that provides an objective quantitative measure of topographic heterogeneity.</Description>
-		<PixelType>U1</PixelType>
+		<PixelType>U2</PixelType>
 	</Function>
 	<Arguments xsi:type='typens:PythonAdapterFunctionArguments'>
 		<Names xsi:type='typens:ArrayOfString'>
